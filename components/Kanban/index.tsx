@@ -1,140 +1,50 @@
 'use client'
-
-import { MoreHorizontal, Plus } from 'lucide-react'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   DragDropContext,
   Draggable,
   Droppable,
-  DroppableProvided,
   DropResult
 } from '@hello-pangea/dnd'
+import Status from './Micro/Status'
+import { demoData } from '@/lib/demoData'
+import { generateRandomLightBGColor } from '@/lib/helper'
+import { toast } from 'sonner'
 
 type Props = {}
 
-const KanbanItem = (props: { title: string }) => {
-  return (
-    <div className='h-[7vh] border w-full px-[5%] flex items-center shadow-[rgba(50,_50,_105,_0.15)_0px_2px_5px_0px,_rgba(0,_0,_0,_0.05)_0px_1px_1px_0px] rounded-md bg-white'>
-      <p className='text-black/70 w-full text-start truncate font-medium'>{
-        props.title
-      }</p>
-    </div>
-  )
-}
-
-const NewItem = () => {
-  return (
-    <button className='w-full flex gap-[0.7vw] items-center'>
-      <Plus className='text-black/30' />
-      <p className='text-black/30'>New</p>
-    </button>
-  )
-}
-
-const Status = (props: {
-  title: string, items: {
-    title: string, description: string, id: string
-  }[], color: string, id: string
-}) => {
-  return (
-    <div className='md:w-[29vw] h-fit w-full'>
-      <div className='w-full mb-[1rem] flex items-center justify-between'>
-        <div className='flex gap-[0.7vw] items-center'>
-          <p style={{
-            backgroundColor: props.color
-          }} className='font-medium rounded-md px-[0.5vw]'>
-            {
-              props.title
-            }
-          </p>
-          <p className='font-medium text-black/30 px-[0.5vw]'>
-            {
-              props.items.length
-            }
-          </p>
-        </div>
-        <div className='flex gap-[0.7vw] items-center'>
-          <MoreHorizontal className='text-black/30' />
-          <Plus className='text-black/30' />
-        </div>
-      </div>
-      <div className='w-full flex flex-col gap-[1rem]'>
-        <Droppable droppableId={`${props.id}`}>
-          {(provided: DroppableProvided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className='flex flex-col gap-[1rem]'>
-              {
-                props.items.map((item, index) => (
-                  <Draggable
-                    key={item.id}
-                    draggableId={item.id}
-                    index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}>
-                        <KanbanItem title={item.title} />
-                      </div>
-                    )}
-                  </Draggable>
-                ))
-              }
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-        <NewItem />
-      </div>
-    </div>
-  )
-}
-
-
-
 const Kanban = (props: Props) => {
-  const [status, setStatus] = React.useState([
-    {
-      title: 'To Do',
-      items: [
-        {
-          title: 'Item 1',
-          description: 'Description 1',
-          id: 'item-1'
-        },
-        {
-          title: 'Item 2',
-          description: 'Description 2',
-          id: 'item-2'
-        }
-      ],
-      color: '#FFC107',
-      id: 'to-do'
-    },
-    {
-      title: 'In Progress',
-      items: [
-        {
-          title: 'Item 3',
-          description: 'Description 3',
-          id: 'item-3'
-        },
-        {
-          title: 'Item 4',
-          description: 'Description 4',
-          id: 'item-4'
-        }
-      ],
-      color: '#007BFF',
-      id: 'in-progress'
+  const [status, setStatus] = useState<KanbanType>()
+
+  useEffect(() => {
+    const localStatus = localStorage.getItem('status')
+    if (localStatus) {
+      if (Object.keys(JSON.parse(localStatus)).length === 0) {
+        localStorage.setItem('status', JSON.stringify(demoData))
+        setStatus(demoData)
+      } else {
+        setStatus(JSON.parse(localStatus))
+      }
+    } else {
+      localStorage.setItem('status', JSON.stringify(demoData))
+      setStatus(demoData)
     }
-  ])
+
+
+  }, [])
 
   const handleDragEnd = (result: DropResult) => {
 
     if (!result.destination || !result.source) return
+
+    if (result.type === 'KANBAN') {
+      const newStatus = Array.from(status as KanbanType)
+      const [reorderedItem] = newStatus.splice(result.source.index, 1)
+      newStatus.splice(result.destination.index, 0, reorderedItem)
+      setStatus(newStatus)
+      localStorage.setItem('status', JSON.stringify(newStatus))
+      return
+    }
 
     const {
       droppableId: sourceId,
@@ -146,11 +56,11 @@ const Kanban = (props: Props) => {
       index: destinationIndex
     } = result.destination
 
-    const draggedItem = status.find((item) => item.id === sourceId)?.items[sourceIndex]
+    const draggedItem = status?.find((item) => item.id === sourceId)?.items[sourceIndex]
 
     if (!draggedItem) return
 
-    const newStatus = status.map((item) => {
+    const newStatus = status?.map((item) => {
       if (item.id === sourceId) {
         item.items.splice(sourceIndex, 1)
       }
@@ -161,14 +71,15 @@ const Kanban = (props: Props) => {
     })
 
     setStatus(newStatus)
+    localStorage.setItem('status', JSON.stringify(newStatus))
   }
 
-  const handleAddItem = (statusId: string, title: string) => {
-    const newStatus = status.map((item) => {
+  const handleAddItem = (statusId: string, desc: string, title: string) => {
+    const newStatus = status?.map((item) => {
       if (item.id === statusId) {
         item.items.push({
           title,
-          description: '',
+          description: desc,
           id: `${title.toLowerCase().split(' ').join('-')}-${new Date().getTime()}`
         })
       }
@@ -176,24 +87,82 @@ const Kanban = (props: Props) => {
     })
 
     setStatus(newStatus)
+    localStorage.setItem('status', JSON.stringify(newStatus))
+  }
+
+  const handleAddStatus = (title: string, triggerId: string) => {
+    if (!status) return
+
+    if (title.trim() === '') return
+
+    if (!triggerId) return
+
+    const indexOfTrigger = status?.findIndex((item) => item.id === triggerId)
+    const newStatus = Array.from(status as KanbanType)
+    const capitalzedTitle = title.trim().split(' ').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+
+    newStatus.splice(indexOfTrigger as number + 1, 0, {
+      title: capitalzedTitle,
+      items: [],
+      color: generateRandomLightBGColor(),
+      id: `${title.toLowerCase().split(' ').join('-')}-${new Date().getTime()}`
+    })
+    setStatus(newStatus)
+    localStorage.setItem('status', JSON.stringify(newStatus))
+  }
+
+  const handleDeleteStatus = (id: string) => {
+    if (!status) return
+
+    if (status.length === 1) {
+      toast.error('You cannot delete the last status')
+      return
+    }
+
+    const newStatus = status?.filter((item) => item.id !== id)
+    setStatus(newStatus)
+    localStorage.setItem('status', JSON.stringify(newStatus))
   }
 
   return (
     <div className='w-full'>
       <DragDropContext
+        key={'kanban'}
         onDragEnd={handleDragEnd}>
-        <div className='flex w-full flex-wrap gap-[3vw]'>
-          {
-            status.map((item, index) => (
-              <Status
-                key={item.id}
-                title={item.title}
-                items={item.items}
-                color={item.color}
-                id={item.id} />
-            ))
-          }
-        </div>
+        <Droppable
+          type='KANBAN'
+          direction='horizontal'
+          droppableId='kanban'>
+          {(provided) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className='w-full flex gap-[1rem]'>
+              {
+                status?.map((item, index) => (
+                  <Draggable
+                    key={item.id}
+                    draggableId={item.id}
+                    index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        <Status
+                          handleDeleteStatus={handleDeleteStatus}
+                          handleAddItem={handleAddItem}
+                          handleAddStatus={handleAddStatus}
+                          draggableProps={provided} {...item} />
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              }
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </DragDropContext>
 
     </div>
