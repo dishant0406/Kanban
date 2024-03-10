@@ -2,14 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { toast } from "sonner"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectLabel
-} from "@/components/ui/select"
+import Select from 'react-select'
 import { useRouter } from 'next/navigation'
 
 
@@ -59,7 +52,7 @@ const ItemComponent = ({ id }: Props) => {
     const localStatus = localStorage.getItem('status')
 
     // If status is not found, return
-    if (!localStatus) return
+    if (!localStatus) return toast.error('Status not found')
 
     // Parse the status
     const parsedStatus: KanbanType = JSON.parse(localStatus)
@@ -71,13 +64,13 @@ const ItemComponent = ({ id }: Props) => {
     const toStatus = parsedStatus.find((status) => status.id === value)
 
     // If from or to status is not found, return
-    if (!fromStatus || !toStatus) return
+    if (!fromStatus || !toStatus) return toast.error('Status not found')
 
     // Find the item index
     const itemIndex = fromStatus.items.findIndex((item) => item.id === id)
 
     // If item is not found, return
-    if (itemIndex === -1) return
+    if (itemIndex === -1) return toast.error('Item not found')
 
     // Get the item
     const item = fromStatus.items[itemIndex]
@@ -92,23 +85,17 @@ const ItemComponent = ({ id }: Props) => {
     localStorage.setItem('status', JSON.stringify(parsedStatus))
 
     // Update the status state
-    setStatus((prevStatus) => {
-      return prevStatus.map((status) => {
-        if (status.id === fromStatus.id) {
-          return {
-            ...status,
-            selected: false
-          }
-        }
-        if (status.id === toStatus.id) {
-          return {
-            ...status,
-            selected: true
-          }
-        }
-        return status
-      })
+    const newStatus = status.map((status) => {
+      if (status.id === fromStatus.id) {
+        status.selected = false
+      }
+      if (status.id === toStatus.id) {
+        status.selected = true
+      }
+      return status
     })
+
+    setStatus(newStatus)
 
     toast.success('Item moved successfully')
   }
@@ -116,21 +103,21 @@ const ItemComponent = ({ id }: Props) => {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!item) return
+    if (!item) return toast.error('Item not found')
 
     const localStatus = localStorage.getItem('status')
 
-    if (!localStatus) return
+    if (!localStatus) return toast.error('Status not found')
 
     const parsedStatus: KanbanType = JSON.parse(localStatus)
 
     const itemStatus = parsedStatus.find((status) => status.id === selectedStatus?.id)
 
-    if (!itemStatus) return
+    if (!itemStatus) return toast.error('Status not found')
 
     const itemIndex = itemStatus.items.findIndex((item) => item.id === id)
 
-    if (itemIndex === -1) return
+    if (itemIndex === -1) return toast.error('Item not found')
 
     itemStatus.items[itemIndex] = item
 
@@ -142,21 +129,21 @@ const ItemComponent = ({ id }: Props) => {
   }
 
   const handleDelete = () => {
-    if (!item) return
+    if (!item) return toast.error('Item not found')
 
     const localStatus = localStorage.getItem('status')
 
-    if (!localStatus) return
+    if (!localStatus) return toast.error('Status not found')
 
     const parsedStatus: KanbanType = JSON.parse(localStatus)
 
     const itemStatus = parsedStatus.find((status) => status.id === selectedStatus?.id)
 
-    if (!itemStatus) return
+    if (!itemStatus) return toast.error('Status not found')
 
     const itemIndex = itemStatus.items.findIndex((item) => item.id === id)
 
-    if (itemIndex === -1) return
+    if (itemIndex === -1) return toast.error('Item not found')
 
     itemStatus.items.splice(itemIndex, 1)
 
@@ -175,7 +162,7 @@ const ItemComponent = ({ id }: Props) => {
           <form onSubmit={handleSave} className='w-[29vw] h-fit bg-white p-[1rem] rounded-md shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)]'>
             <label
               htmlFor='title'
-              className='text-black/70 font-medium'>Title</label>
+              className='font-medium text-black/70'>Title</label>
             <input
               name='title'
               className='w-full border border-black/30 focus:outline-none rounded-md px-[1rem] py-[0.5rem]  mb-[1rem]'
@@ -187,7 +174,7 @@ const ItemComponent = ({ id }: Props) => {
             />
             <label
               htmlFor='description'
-              className='text-black/70 font-medium'>Description</label>
+              className='font-medium text-black/70'>Description</label>
             <textarea
               name='description'
               className='w-full min-h-[10rem] border border-black/30 focus:outline-none rounded-md px-[1rem] py-[0.5rem]  mb-[1rem]'
@@ -199,34 +186,34 @@ const ItemComponent = ({ id }: Props) => {
 
             <label
               htmlFor='status'
-              className='text-black/70 font-medium'>Status</label>
+              className='font-medium text-black/70'>Status</label>
             <Select
-              value={selectedStatus?.title}
-
-              onValueChange={handleSelectChange}
-
-            >
-              <SelectTrigger >
-                <SelectValue>
-                  {
-                    selectedStatus?.title
+              styles={{
+                control: (styles) => ({
+                  ...styles,
+                  border: '1px solid rgba(0,0,0,0.3)',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    border: '1px solid rgba(0,0,0,0.3)',
                   }
-                </SelectValue>
+                })
 
-              </SelectTrigger>
-              <SelectContent>
-                {
-                  status.map((status) => (
-                    <SelectItem
-                      key={status.id}
-                      value={status.id}
-                    >
-                      {status.title}
-                    </SelectItem>
-                  ))
+              }}
+              value={{
+                label: selectedStatus?.title,
+                value: selectedStatus?.id
+              }}
+              onChange={(option) => {
+                if (typeof option?.value === 'string') {
+                  handleSelectChange(option.value)
                 }
-              </SelectContent>
-            </Select>
+              }}
+              options={status.map((status) => ({
+                label: status.title,
+                value: status.id
+              }))}
+            />
+
 
             <div className='w-full gap-[1rem] flex items-center justify-center'>
               <button

@@ -26,7 +26,7 @@ const AddNewStatus = (props: Props) => {
 
       <Plus onClick={() => {
         setOpen(true)
-      }} className='text-black/30 cursor-pointer' />
+      }} className='cursor-pointer text-black/30' />
 
       <SheetContent>
         <SheetHeader>

@@ -6,7 +6,7 @@ import Image from "next/image";
  *
  * @return {JSX.Element} The main element of the Home component.
  */
-const Home = () => {
+const Home = (): JSX.Element => {
   return (
     <main className="w-full p-[2%]">
       <Kanban />

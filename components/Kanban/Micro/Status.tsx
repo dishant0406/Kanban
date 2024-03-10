@@ -42,7 +42,7 @@ const Status = (props: {
         <div className='flex gap-[0.7vw] items-center'>
           <Trash2
             onClick={() => props.handleDeleteStatus(props.id)}
-            className='text-black/30 cursor-pointer' />
+            className='cursor-pointer text-black/30' />
           <AddNewStatus handleAddStatus={(title: string) => props.handleAddStatus(title, props.id)} />
           <div {...props.draggableProps?.dragHandleProps}>
             <GripVertical
