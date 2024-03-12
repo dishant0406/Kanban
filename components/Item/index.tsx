@@ -191,13 +191,10 @@ const ItemComponent = ({ id }: Props) => {
               styles={{
                 control: (styles) => ({
                   ...styles,
-                  border: '1px solid rgba(0,0,0,0.3)',
+                  borderColor: 'rgba(0, 0, 0, 0.3)',
                   boxShadow: 'none',
-                  '&:hover': {
-                    border: '1px solid rgba(0,0,0,0.3)',
-                  }
+                  '&:hover': { borderColor: 'rgba(0, 0, 0, 0.3)' }
                 })
-
               }}
               value={{
                 label: selectedStatus?.title,
@@ -213,8 +210,6 @@ const ItemComponent = ({ id }: Props) => {
                 value: status.id
               }))}
             />
-
-
             <div className='w-full gap-[1rem] flex items-center justify-center'>
               <button
                 type='submit'
